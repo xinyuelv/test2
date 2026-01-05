@@ -39,7 +39,22 @@
       border: 0;
       /* 无边框，确保无缝 */
       margin: 0;
-      /* 无外边距，拼接紧密 */
+      image-rendering: -webkit-optimize-contrast;
+      image-rendering: crisp-edges;
+      transform: translateZ(0);
+      will-change: transform;
+      background-color: #f0f0f0;
+    }
+
+    .slice-image.loaded {
+      opacity: 1;
+    }
+
+    .loading {
+      text-align: center;
+      padding: 20px;
+      color: #999;
+      font-size: 14px;
     }
   </style>
 </head>
@@ -47,17 +62,47 @@
 <body>
   <div class="container">
     <!-- 按切图顺序依次插入图片，自动无缝拼接 -->
-    <!-- 注意：
-            1. 将src替换为你的切图文件名（按切割顺序排列，如img_1.jpg、img_2.jpg...）
-            2. 若图片放在仓库的images文件夹，路径改为src="images/图片名.jpg"
-            3. 新增/删减<img>标签，对应你的切图数量
-        -->
-    <img src="img_1.jpeg" alt="切图1" class="slice-image">
-    <img src="img_2.jpeg" alt="切图2" class="slice-image">
-    <img src="img_3.jpeg" alt="切图3" class="slice-image">
-    <img src="img_4.jpeg" alt="切图4" class="slice-image">
-    <img src="img_5.jpeg" alt="切图5" class="slice-image">
+    <!-- 使用 loading="lazy" 实现原生懒加载，data-src 用于渐进式加载 -->
+    < img data-src="img_1.jpeg" alt="切图1" class="slice-image" loading="lazy">
+    < img data-src="img_2.jpeg" alt="切图2" class="slice-image" loading="lazy">
+    < img data-src="img_3.jpeg" alt="切图3" class="slice-image" loading="lazy">
+    < img data-src="img_4.jpeg" alt="切图4" class="slice-image" loading="lazy">
+    < img data-src="img_5.jpeg" alt="切图5" class="slice-image" loading="lazy">
   </div>
-</body>
 
-</html>
+  <script>
+    // 图片懒加载和性能优化
+    document.addEventListener('DOMContentLoaded', function() {
+      const images = document.querySelectorAll('.slice-image');
+      
+      images.forEach(img => {
+        const src = img.getAttribute('data-src');
+        if (src) {
+          img.src = src;
+        }
+        
+        img.addEventListener('load', function() {
+          this.classList.add('loaded');
+        });
+        
+        // 如果图片已经缓存，立即显示
+        if (img.complete) {
+          img.classList.add('loaded');
+        }
+      });
+
+      if ('IntersectionObserver' in window) {
+        const imageObserver = new IntersectionObserver((entries, observer) => {
+          entries.forEach(entry => {
+            if (entry.isIntersecting) {
+              const img = entry.target;
+              const src = img.getAttribute('data-src');
+              if (src && !img.src) {
+                img.src = src;
+              }
+              observer.unobserve(img);
+            }
+          });
+        }, {
+          rootMargin: '50px' // 提前50px开始加载
+        });
